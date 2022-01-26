@@ -15,6 +15,8 @@ from core.config import cfg
 from PIL import Image
 import cv2
 import numpy as np
+from numpy import asarray
+from numpy import savetxt
 import matplotlib.pyplot as plt
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
@@ -164,7 +166,7 @@ def main(_argv):
         # allowed_classes = list(class_names.values())
         
         # custom allowed classes (uncomment line below to customize tracker for only people)
-        allowed_classes = ['car']
+        allowed_classes = ['car', 'person']
 
         # loop through objects and use class index to get class name, allow only classes in allowed_classes list
         names = []
@@ -204,29 +206,39 @@ def main(_argv):
         tracker.predict()
         tracker.update(detections)
         
+        counter = {
+            "person": 0,
+            "car": 0,
+        }
         # update tracks
         for track in tracker.tracks:
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue 
-            # print(class_name,' : ', track.track_id , ' va a une vitesse ' , abs(track.mean[4] + track.mean[5]))
-
             
+
             """
             numéro de la frame, id, nom de la classe, the bounding box center position (x, y), aspect ratio a, height h,
             leur dérivé, le calcul absolu de la vitesse.
             """
-            result_arr.append([frame_num, track.track_id, class_name, track.mean[0], track.mean[1], track.mean[2], track.mean[3], 
-                track.mean[4], track.mean[5], abs(track.mean[4] + track.mean[5])])
             objects.add(track.track_id)
             bbox = track.to_tlbr()
             class_name = track.get_class()
+            result_arr.append([frame_num, track.track_id, class_name, track.mean[0], track.mean[1], track.mean[2], track.mean[3], 
+                track.mean[4], track.mean[5], abs(track.mean[4] + track.mean[5])])
+            try:
+                counter[class_name] += 1
+            except Exception:
+                print('La classe {} n\'existe pas dans la liste des classes'.format(class_name))
             
+            print("L'objet '{}' numéro {} a la position ({},{}) va à une vitesse {}.".format(class_name, track.track_id,  int(track.mean[0]), int(track.mean[1]), abs(int(track.mean[4]) + int(track.mean[5]))))
         # draw bbox on screen
             color = colors[int(track.track_id) % len(colors)]
             color = [i * 255 for i in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
             cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
+            
+        cv2.putText(frame, 'Personne : {} | Voiture : {}'.format(counter['person'], counter['car']), (50,50), 0, 0.75, (0,0,0),2)
 
         # if enable info flag then print details about each track
             # if FLAGS.info:
@@ -247,7 +259,14 @@ def main(_argv):
         if cv2.waitKey(1) & 0xFF == ord('q'): break
     cv2.destroyAllWindows()
     # print("nombre d'objets : ", len(objects))
-    print(result_arr, len(result_arr))
+    # print(result_arr, len(result_arr))
+    data = asarray(result_arr)
+    # save to csv file
+    csvName = video_path.split("/")[-1].split(".")[0]
+    try:
+        savetxt(csvName + '.csv', data, delimiter=',', fmt='%s')
+    except Exception:
+        pass
 
 if __name__ == '__main__':
     try:
