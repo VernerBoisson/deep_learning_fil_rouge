@@ -230,7 +230,7 @@ def main(_argv):
             except Exception:
                 print('La classe {} n\'existe pas dans la liste des classes'.format(class_name))
             
-            print("L'objet '{}' numéro {} a la position ({},{}) va à une vitesse {}.".format(class_name, track.track_id,  int(track.mean[0]), int(track.mean[1]), abs(int(track.mean[4]) + int(track.mean[5]))))
+            print("L'objet '{}' numéro {} à la position ({},{}) va à une vitesse {}.".format(class_name, track.track_id,  int(track.mean[0]), int(track.mean[1]), abs(int(track.mean[4]) + int(track.mean[5]))))
         # draw bbox on screen
             color = colors[int(track.track_id) % len(colors)]
             color = [i * 255 for i in color]
